@@ -1,15 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { X, ChevronLeft, ChevronRight, Camera } from "lucide-react"
+import { X, ChevronLeft, ChevronRight, Camera, Play, Pause } from "lucide-react"
 
 const galleryImages = [
   {
     id: 1,
-    src: "/stunning-lake-view-from-homestay-balcony-serene-mo.jpg",
+    src: "/stunning-taal-lake-view-from-homestay-balcony-sere.jpg",
     alt: "Stunning lake view from the homestay",
     category: "Views",
     title: "Serene Lake Views",
@@ -33,7 +33,7 @@ const galleryImages = [
   },
   {
     id: 4,
-    src: "/placeholder-gwwfc.png",
+    src: "/delicious-home-cooked-filipino-meal-traditional-cu.jpg",
     alt: "Delicious home-cooked meal",
     category: "Dining",
     title: "Home-cooked Meals",
@@ -41,7 +41,7 @@ const galleryImages = [
   },
   {
     id: 5,
-    src: "/placeholder-nuo5q.png",
+    src: "/outdoor-dining-area-al-fresco-lake-view-restaurant.jpg",
     alt: "Outdoor dining area",
     category: "Dining",
     title: "Al Fresco Dining",
@@ -49,7 +49,7 @@ const galleryImages = [
   },
   {
     id: 6,
-    src: "/placeholder-9hpfu.png",
+    src: "/comfortable-hotel-bedroom-cozy-bed-modern-amenitie.jpg",
     alt: "Comfortable bedroom",
     category: "Rooms",
     title: "Comfortable Bedrooms",
@@ -65,7 +65,7 @@ const galleryImages = [
   },
   {
     id: 8,
-    src: "/placeholder-mm5hz.png",
+    src: "/sunset-view-from-balcony-golden-hour-taal-lake-rom.jpg",
     alt: "Sunset view from balcony",
     category: "Views",
     title: "Golden Hour Magic",
@@ -73,7 +73,7 @@ const galleryImages = [
   },
   {
     id: 9,
-    src: "/placeholder-jjw48.png",
+    src: "/local-activities-attractions-tagaytay-adventure-to.jpg",
     alt: "Local activities and attractions",
     category: "Activities",
     title: "Local Adventures",
@@ -81,7 +81,7 @@ const galleryImages = [
   },
   {
     id: 10,
-    src: "/placeholder-i14dt.png",
+    src: "/secure-parking-area-hotel-facility-safe-convenient.jpg",
     alt: "Parking area",
     category: "Facilities",
     title: "Secure Parking",
@@ -89,7 +89,7 @@ const galleryImages = [
   },
   {
     id: 11,
-    src: "/placeholder-hu2iq.png",
+    src: "/welcoming-hotel-reception-area-modern-lobby-friend.jpg",
     alt: "Reception area",
     category: "Interior",
     title: "Welcoming Reception",
@@ -110,12 +110,34 @@ const categories = ["All", "Views", "Interior", "Exterior", "Dining", "Rooms", "
 export function GallerySection() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedImage, setSelectedImage] = useState<number | null>(null)
+  const [isAutoPlay, setIsAutoPlay] = useState(false)
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
+  const autoPlayRef = useRef<NodeJS.Timeout>()
 
   const filteredImages =
     selectedCategory === "All" ? galleryImages : galleryImages.filter((img) => img.category === selectedCategory)
 
+  useEffect(() => {
+    if (isAutoPlay && filteredImages.length > 0) {
+      autoPlayRef.current = setInterval(() => {
+        setCurrentSlideIndex((prev) => (prev + 1) % filteredImages.length)
+      }, 3000)
+    } else {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current)
+      }
+    }
+
+    return () => {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current)
+      }
+    }
+  }, [isAutoPlay, filteredImages.length])
+
   const openLightbox = (imageId: number) => {
     setSelectedImage(imageId)
+    setIsAutoPlay(false)
   }
 
   const closeLightbox = () => {
@@ -144,35 +166,48 @@ export function GallerySection() {
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16 animate-fade-in">
-          <Badge className="mb-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2">
-            <Camera className="w-4 h-4 mr-2" />
+          <Badge className="mb-4 bg-gradient-to-r from-primary to-green-600 text-white px-4 py-2 hover:scale-105 transition-transform duration-300">
+            <Camera className="w-4 h-4 mr-2 animate-pulse" />
             Photo Gallery
           </Badge>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 text-balance">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 text-balance hover:text-primary transition-colors duration-500 cursor-default">
             Discover the Beauty of Our Homestay
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto text-pretty">
             Take a visual journey through our property and experience the warmth, comfort, and natural beauty that
-            awaits you at Heaven Home Stay.
+            awaits you at Lakeview Bliss Homestay.
           </p>
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
+        <div className="flex flex-wrap justify-center items-center gap-3 mb-12">
           {categories.map((category) => (
             <Button
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full transition-all duration-300 ${
+              onClick={() => {
+                setSelectedCategory(category)
+                setCurrentSlideIndex(0)
+              }}
+              className={`px-6 py-2 rounded-full transition-all duration-300 hover:scale-105 ${
                 selectedCategory === category
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                  : "border-gray-300 text-gray-600 hover:border-purple-400 hover:text-purple-600"
+                  ? "bg-gradient-to-r from-primary to-green-600 text-white shadow-lg"
+                  : "border-gray-300 text-gray-600 hover:border-primary hover:text-primary"
               }`}
             >
               {category}
             </Button>
           ))}
+
+          <Button
+            variant="outline"
+            onClick={() => setIsAutoPlay(!isAutoPlay)}
+            className={`px-4 py-2 rounded-full transition-all duration-300 hover:scale-105 ${
+              isAutoPlay ? "bg-primary text-white" : "border-gray-300 text-gray-600 hover:border-primary"
+            }`}
+          >
+            {isAutoPlay ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </Button>
         </div>
 
         {/* Image Grid */}
@@ -180,8 +215,13 @@ export function GallerySection() {
           {filteredImages.map((image, index) => (
             <div
               key={image.id}
-              className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer animate-slide-up"
-              style={{ animationDelay: `${index * 50}ms` }}
+              className={`group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer animate-slide-up hover:-translate-y-2 hover:rotate-1 ${
+                isAutoPlay && index === currentSlideIndex ? "ring-4 ring-primary ring-opacity-50 scale-105" : ""
+              }`}
+              style={{
+                animationDelay: `${index * 50}ms`,
+                transform: isAutoPlay && index === currentSlideIndex ? "scale(1.05)" : "scale(1)",
+              }}
               onClick={() => openLightbox(image.id)}
             >
               <div className="aspect-square overflow-hidden">
@@ -195,14 +235,16 @@ export function GallerySection() {
               {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                  <Badge className="mb-2 bg-white/20 backdrop-blur-sm text-white border-0">{image.category}</Badge>
+                  <Badge className="mb-2 bg-white/20 backdrop-blur-sm text-white border-0 animate-pulse">
+                    {image.category}
+                  </Badge>
                   <h3 className="font-semibold text-lg mb-1">{image.title}</h3>
                   <p className="text-sm text-gray-200">{image.description}</p>
                 </div>
               </div>
 
               {/* Hover Icon */}
-              <div className="absolute top-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="absolute top-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
                 <Camera className="w-5 h-5 text-white" />
               </div>
             </div>
@@ -267,10 +309,10 @@ export function GallerySection() {
 
         {/* Call to Action */}
         <div className="text-center mt-16">
-          <p className="text-gray-600 mb-6">Ready to experience this beauty in person?</p>
+          <p className="text-gray-600 mb-6 animate-fade-in-up">Ready to experience this beauty in person?</p>
           <Button
             size="lg"
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105"
+            className="bg-gradient-to-r from-primary to-green-600 hover:from-primary/90 hover:to-green-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 animate-fade-in-up"
           >
             Book Your Stay Now
           </Button>
