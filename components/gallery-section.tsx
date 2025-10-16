@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { X, ChevronLeft, ChevronRight, Camera, Play, Pause } from "lucide-react"
+import { Dialog, DialogContent } from "@radix-ui/react-dialog"
+// or update the path to the correct local file if you have a custom Dialog component, e.g.:
+// import { Dialog, DialogContent } from "./ui/dialog"
+import { X, ChevronLeft, ChevronRight, Camera, Play, Pause, ZoomIn, Sparkles, Heart } from "lucide-react"
 
 const galleryImages = [
   {
@@ -112,10 +114,32 @@ export function GallerySection() {
   const [selectedImage, setSelectedImage] = useState<number | null>(null)
   const [isAutoPlay, setIsAutoPlay] = useState(false)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
+  const [favorites, setFavorites] = useState<number[]>([])
+  const [visibleImages, setVisibleImages] = useState<number[]>([])
   const autoPlayRef = useRef<NodeJS.Timeout>()
+  const sectionRef = useRef<HTMLDivElement>(null)
 
   const filteredImages =
     selectedCategory === "All" ? galleryImages : galleryImages.filter((img) => img.category === selectedCategory)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const imageIndex = Number.parseInt(entry.target.getAttribute("data-index") || "0")
+            setVisibleImages((prev) => [...prev, imageIndex])
+          }
+        })
+      },
+      { threshold: 0.1 }
+    )
+
+    const images = sectionRef.current?.querySelectorAll("[data-index]")
+    images?.forEach((img) => observer.observe(img))
+
+    return () => observer.disconnect()
+  }, [filteredImages])
 
   useEffect(() => {
     if (isAutoPlay && filteredImages.length > 0) {
@@ -159,28 +183,49 @@ export function GallerySection() {
     setSelectedImage(filteredImages[newIndex].id)
   }
 
+  const toggleFavorite = (imageId: number) => {
+    setFavorites((prev) =>
+      prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
+    )
+  }
+
   const currentImage = selectedImage ? galleryImages.find((img) => img.id === selectedImage) : null
 
   return (
-    <section id="gallery" className="py-20 px-4 bg-gradient-to-br from-gray-50 to-slate-100">
-      <div className="max-w-7xl mx-auto">
+    <section 
+      id="gallery" 
+      ref={sectionRef}
+      className="py-24 px-4 bg-gradient-to-br from-gray-50 via-slate-50 to-blue-50 relative overflow-hidden"
+    >
+      {/* Animated background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-16 animate-fade-in">
-          <Badge className="mb-4 bg-gradient-to-r from-primary to-green-600 text-white px-4 py-2 hover:scale-105 transition-transform duration-300">
-            <Camera className="w-4 h-4 mr-2 animate-pulse" />
-            Photo Gallery
-          </Badge>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 text-balance hover:text-primary transition-colors duration-500 cursor-default">
-            Discover the Beauty of Our Homestay
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full px-6 py-2 mb-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer">
+            <Camera className="w-4 h-4 animate-pulse" />
+            <span className="text-sm font-semibold uppercase tracking-wider">Photo Gallery</span>
+          </div>
+
+          <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            Discover the Beauty
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
+              of Our Homestay
+            </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto text-pretty">
+
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Take a visual journey through our property and experience the warmth, comfort, and natural beauty that
             awaits you at Lakeview Bliss Homestay.
           </p>
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap justify-center items-center gap-3 mb-12">
+        <div className="flex flex-wrap justify-center items-center gap-3 mb-16">
           {categories.map((category) => (
             <Button
               key={category}
@@ -188,11 +233,12 @@ export function GallerySection() {
               onClick={() => {
                 setSelectedCategory(category)
                 setCurrentSlideIndex(0)
+                setVisibleImages([])
               }}
-              className={`px-6 py-2 rounded-full transition-all duration-300 hover:scale-105 ${
+              className={`px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 font-semibold ${
                 selectedCategory === category
-                  ? "bg-gradient-to-r from-primary to-green-600 text-white shadow-lg"
-                  : "border-gray-300 text-gray-600 hover:border-primary hover:text-primary"
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl"
+                  : "border-2 border-gray-300 text-gray-600 hover:border-blue-500 hover:text-blue-600 bg-white"
               }`}
             >
               {category}
@@ -202,11 +248,13 @@ export function GallerySection() {
           <Button
             variant="outline"
             onClick={() => setIsAutoPlay(!isAutoPlay)}
-            className={`px-4 py-2 rounded-full transition-all duration-300 hover:scale-105 ${
-              isAutoPlay ? "bg-primary text-white" : "border-gray-300 text-gray-600 hover:border-primary"
+            className={`px-4 py-3 rounded-full transition-all duration-300 hover:scale-105 border-2 ${
+              isAutoPlay 
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-lg" 
+                : "border-gray-300 text-gray-600 hover:border-blue-500 bg-white"
             }`}
           >
-            {isAutoPlay ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isAutoPlay ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </Button>
         </div>
 
@@ -215,37 +263,61 @@ export function GallerySection() {
           {filteredImages.map((image, index) => (
             <div
               key={image.id}
-              className={`group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer animate-slide-up hover:-translate-y-2 hover:rotate-1 ${
-                isAutoPlay && index === currentSlideIndex ? "ring-4 ring-primary ring-opacity-50 scale-105" : ""
+              data-index={index}
+              className={`group relative overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-700 cursor-pointer ${
+                visibleImages.includes(index) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+              } ${
+                isAutoPlay && index === currentSlideIndex 
+                  ? "ring-4 ring-blue-500 ring-opacity-50 scale-105 shadow-2xl" 
+                  : "hover:shadow-2xl hover:scale-105"
               }`}
               style={{
                 animationDelay: `${index * 50}ms`,
-                transform: isAutoPlay && index === currentSlideIndex ? "scale(1.05)" : "scale(1)",
               }}
-              onClick={() => openLightbox(image.id)}
             >
-              <div className="aspect-square overflow-hidden">
+              {/* Glow effect for active slide */}
+              {isAutoPlay && index === currentSlideIndex && (
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-xl opacity-50 animate-pulse"></div>
+              )}
+
+              <div className="relative aspect-square overflow-hidden" onClick={() => openLightbox(image.id)}>
                 <img
                   src={image.src || "/placeholder.svg"}
                   alt={image.alt}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-              </div>
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                  <Badge className="mb-2 bg-white/20 backdrop-blur-sm text-white border-0 animate-pulse">
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                {/* Content overlay */}
+                <div className="absolute inset-0 flex flex-col justify-end p-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Badge className="mb-3 bg-white/20 backdrop-blur-sm text-white border-0 w-fit">
                     {image.category}
                   </Badge>
-                  <h3 className="font-semibold text-lg mb-1">{image.title}</h3>
+                  <h3 className="font-bold text-xl mb-2">{image.title}</h3>
                   <p className="text-sm text-gray-200">{image.description}</p>
                 </div>
-              </div>
 
-              {/* Hover Icon */}
-              <div className="absolute top-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
-                <Camera className="w-5 h-5 text-white" />
+                {/* Hover Icon */}
+                <div className="absolute top-4 right-4 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
+                  <ZoomIn className="w-6 h-6 text-white" />
+                </div>
+
+                {/* Favorite button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleFavorite(image.id)
+                  }}
+                  className="absolute top-4 left-4 w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+                >
+                  <Heart 
+                    className={`w-5 h-5 transition-colors duration-300 ${
+                      favorites.includes(image.id) ? "fill-rose-500 text-rose-500" : "text-gray-600"
+                    }`} 
+                  />
+                </button>
               </div>
             </div>
           ))}
@@ -253,7 +325,7 @@ export function GallerySection() {
 
         {/* Lightbox Dialog */}
         <Dialog open={selectedImage !== null} onOpenChange={closeLightbox}>
-          <DialogContent className="max-w-6xl w-full h-[90vh] p-0 bg-black/95 border-0">
+          <DialogContent className="max-w-7xl w-full h-[95vh] p-0 bg-black/98 border-0 backdrop-blur-xl">
             {currentImage && (
               <div className="relative w-full h-full flex items-center justify-center">
                 {/* Close Button */}
@@ -261,7 +333,7 @@ export function GallerySection() {
                   variant="ghost"
                   size="icon"
                   onClick={closeLightbox}
-                  className="absolute top-4 right-4 z-10 text-white hover:bg-white/20 rounded-full"
+                  className="absolute top-6 right-6 z-10 w-12 h-12 text-white hover:bg-white/20 rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110"
                 >
                   <X className="w-6 h-6" />
                 </Button>
@@ -271,7 +343,7 @@ export function GallerySection() {
                   variant="ghost"
                   size="icon"
                   onClick={() => navigateImage("prev")}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20 rounded-full"
+                  className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-14 h-14 text-white hover:bg-white/20 rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110"
                 >
                   <ChevronLeft className="w-8 h-8" />
                 </Button>
@@ -280,7 +352,7 @@ export function GallerySection() {
                   variant="ghost"
                   size="icon"
                   onClick={() => navigateImage("next")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20 rounded-full"
+                  className="absolute right-6 top-1/2 -translate-y-1/2 z-10 w-14 h-14 text-white hover:bg-white/20 rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110"
                 >
                   <ChevronRight className="w-8 h-8" />
                 </Button>
@@ -289,17 +361,17 @@ export function GallerySection() {
                 <img
                   src={currentImage.src || "/placeholder.svg"}
                   alt={currentImage.alt}
-                  className="max-w-full max-h-full object-contain"
+                  className="max-w-full max-h-[80vh] object-contain"
                 />
 
                 {/* Image Info */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
-                  <div className="max-w-4xl mx-auto text-white">
-                    <Badge className="mb-3 bg-white/20 backdrop-blur-sm text-white border-0">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-10">
+                  <div className="max-w-5xl mx-auto text-white">
+                    <Badge className="mb-4 bg-white/20 backdrop-blur-md text-white border-0 text-sm px-4 py-2">
                       {currentImage.category}
                     </Badge>
-                    <h3 className="text-2xl font-bold mb-2">{currentImage.title}</h3>
-                    <p className="text-gray-200 text-lg">{currentImage.description}</p>
+                    <h3 className="text-4xl font-bold mb-3">{currentImage.title}</h3>
+                    <p className="text-gray-200 text-xl">{currentImage.description}</p>
                   </div>
                 </div>
               </div>
@@ -308,14 +380,24 @@ export function GallerySection() {
         </Dialog>
 
         {/* Call to Action */}
-        <div className="text-center mt-16">
-          <p className="text-gray-600 mb-6 animate-fade-in-up">Ready to experience this beauty in person?</p>
-          <Button
-            size="lg"
-            className="bg-gradient-to-r from-primary to-green-600 hover:from-primary/90 hover:to-green-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 animate-fade-in-up"
-          >
-            Book Your Stay Now
-          </Button>
+        <div className="text-center mt-20">
+          <div className="inline-block bg-white rounded-3xl p-10 shadow-2xl max-w-2xl">
+            <Sparkles className="w-12 h-12 mx-auto mb-4 text-blue-600" />
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">Ready to Experience This Beauty?</h3>
+            <p className="text-gray-600 mb-6 text-lg">
+              Don't just look at the pictures—come and live the experience. Book your stay today!
+            </p>
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-12 py-6 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl group overflow-hidden relative"
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
+              <span className="relative flex items-center gap-2">
+                <Camera className="w-5 h-5" />
+                Book Your Stay Now
+              </span>
+            </Button>
+          </div>
         </div>
       </div>
     </section>

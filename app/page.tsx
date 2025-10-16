@@ -12,9 +12,9 @@ export default function HomePage() {
     <main className="min-h-screen">
       <Navigation />
       <HeroSection />
-      <HealthProtocolsSection />
+      {/* <HealthProtocolsSection /> */}
       <ServicesSection />
-      <ReviewsSection />
+      {/* <ReviewsSection /> */}
       <PromotionalPackagesSection />
       <ContactSection />
       <Footer />
