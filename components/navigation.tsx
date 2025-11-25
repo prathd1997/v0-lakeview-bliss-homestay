@@ -4,11 +4,14 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Menu, X, Phone, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState("home")
+  const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,11 +52,10 @@ export function Navigation() {
   }
 
   const navItems = [
-    { name: "Home", href: "#home" },
-    { name: "Function Rooms", href: "#function-rooms" },
-    { name: "Accommodations", href: "#accommodations" },
-    { name: "Facilities", href: "#facilities" },
-    { name: "Contact", href: "#contact" },
+    { name: "Home", href: "/", type: "link" },
+    { name: "Rooms", href: "/rooms", type: "link" },
+    { name: "Facilities", href: "#facilities", type: "scroll" },
+    { name: "Contact", href: "/contact", type: "link" },
   ]
 
   return (
@@ -68,7 +70,7 @@ export function Navigation() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <div className="flex items-center gap-3 transition-all duration-500 hover:scale-105 cursor-pointer">
+            <Link href="/" className="flex items-center gap-3 transition-all duration-500 hover:scale-105 cursor-pointer">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl transition-all duration-500 ${
                 isScrolled 
                   ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg" 
@@ -88,12 +90,42 @@ export function Navigation() {
                   Homestay
                 </span>
               </div>
-            </div>
+            </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-1">
               {navItems.map((item) => {
-                const isActive = activeSection === item.href.replace('#', '')
+                const isActive = item.type === "link" 
+                  ? pathname === item.href
+                  : activeSection === item.href.replace('#', '')
+                
+                if (item.type === "link") {
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`relative px-5 py-2 font-medium transition-all duration-300 rounded-xl group ${
+                        isScrolled 
+                          ? isActive
+                            ? "text-emerald-600 bg-emerald-50"
+                            : "text-gray-700 hover:text-emerald-600 hover:bg-gray-50"
+                          : isActive
+                            ? "text-white bg-white/20"
+                            : "text-white/90 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {item.name}
+                      <span
+                        className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 transition-all duration-300 rounded-full ${
+                          isActive ? "w-8" : "w-0 group-hover:w-8"
+                        } ${
+                          isScrolled ? "bg-emerald-600" : "bg-white"
+                        }`}
+                      ></span>
+                    </Link>
+                  )
+                }
+                
                 return (
                   <a
                     key={item.name}
@@ -183,7 +215,31 @@ export function Navigation() {
         <div className="bg-white/95 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-gray-200">
           <div className="flex flex-col gap-2 mb-6">
             {navItems.map((item, index) => {
-              const isActive = activeSection === item.href.replace('#', '')
+              const isActive = item.type === "link" 
+                ? pathname === item.href
+                : activeSection === item.href.replace('#', '')
+              
+              if (item.type === "link") {
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`px-5 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 ${
+                      isActive
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    }`}
+                    style={{
+                      animationDelay: `${index * 50}ms`,
+                      animation: isMobileMenuOpen ? 'slideIn 0.3s ease-out forwards' : 'none'
+                    }}
+                  >
+                    {item.name}
+                  </Link>
+                )
+              }
+              
               return (
                 <a
                   key={item.name}
